@@ -1,0 +1,107 @@
+* GPTel Commit Package
+
+This document describes how to install, configure, and use the GPTel Commit package,
+which leverages GPT models to generate Git commit messages within Emacs.
+
+** Installation
+
+To install GPTel Commit, you need to have the =gptel= package installed first,
+as =gptel-commit= depends on it.
+
+1. Clone or download the =gptel-commit.el= file and save it to your Emacs load-path.
+2. Load the package by adding the following to your Emacs init file:
+
+   #+BEGIN_SRC emacs-lisp
+   (require 'gptel-commit)
+   #+END_SRC
+
+Alternatively, you can use =use-package= if you prefer:
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package gptel-commit
+     :load-path "/path/to/gptel-commit-directory"
+     :commands (gptel-commit gptel-rationale-commit))
+   #+END_SRC
+
+** Configuration
+
+The package provides several customizable variables:
+
+- =gptel-commit-prompt=
+  The system prompt used to instruct the GPT model on generating commit messages.
+
+- =gptel-commit-backend=
+  Backend configuration used for commit message generation.
+  You can customize it to use a lightweight or free GPT model backend if desired.
+
+- =gptel-commit-diff-excludes=
+  A list of file globs to exclude from the staged diff analysis.
+
+Example to customize excluded files and use a different backend:
+
+#+BEGIN_SRC emacs-lisp
+(setq gptel-commit-diff-excludes
+      '("pnpm-lock.yaml" "*.lock" "vendor/**/*.go"))
+
+(setq gptel-commit-backend
+      (gptel-make-openai "OpenRouter"
+        :host "openrouter.ai"
+        :endpoint "/api/v1/chat/completions"
+        :stream t
+        :key "YOUR_API_KEY"
+        :models '(qwen/qwen3-30b-a3b:free)))
+#+END_SRC
+
+You may also add hooks to =gptel-commit-after-insert-hook= to run code
+after the commit message is inserted.
+
+** Usage
+
+There are two main commands provided by the package:
+
+1. =gptel-commit=
+   Generates a commit message automatically from your staged changes.
+
+   Usage:
+
+   #+BEGIN_SRC emacs-lisp
+   M-x gptel-commit
+   #+END_SRC
+
+2. =gptel-rationale-commit=
+   Prompts you to enter rationale explaining *why* the changes were made before generating the commit message.
+   This rationale will be incorporated as context in the prompt to improve commit quality.
+
+   Usage:
+
+   #+BEGIN_SRC emacs-lisp
+   M-x gptel-rationale-commit
+   #+END_SRC
+
+When using =gptel-rationale-commit=, a temporary buffer named =*GPTel Commit Rationale*= opens.
+Enter the rationale there, and press:
+
+- =C-c C-c= to submit and generate the commit message.
+- =C-c C-k= to cancel.
+
+** How it works
+
+- The package filters staged files to exclude those matching patterns in =gptel-commit-diff-excludes=.
+- It generates a filtered diff from the included staged files.
+- The diff, combined with an optional rationale, is sent as a prompt to the GPT backend.
+- The commit message is generated according to strict formatting rules focused on conventional commit style and ChangeLog entries.
+- The generated message is inserted into the current =COMMIT_EDITMSG= buffer.
+
+** Additional Utilities
+
+- =gptel-commit-fill-paragraph=
+  Fills the paragraph in the commit message buffer starting after the first two lines.
+
+** License
+
+GPL v3 or later.
+
+** See Also
+
+- =gptel= package for general GPT integration in Emacs.
+- Git commit message conventions and ChangeLog guidelines.
