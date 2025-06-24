@@ -1,9 +1,14 @@
 ;;; gptel-commit.el --- Generate commit message with gptel  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Liu Bo
+;; Copyright (C) 2025 Liu Bo
 
-;; Author: Liu Bo <liubolovelife@gmail.com>
-;; Keywords: vc
+;; Author: Liu Bo
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "27.1") (gptel "0.1.0"))
+;; Keywords: vc, convenience
+;; URL: https://github.com/lakkiy/gptel-commit
+
+;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -18,9 +23,21 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;; This file is NOT part of GNU Emacs.
+
 ;;; Commentary:
 
+;; This package provides functions to generate Git commit messages using GPTel.
+;; It analyzes staged changes and generates appropriate commit messages following
+;; conventional Git commit formats.
 ;;
+;; Main functions:
+;; - `gptel-commit': Generate commit message directly
+;; - `gptel-commit-rationale': Generate with optional context/rationale
+;; - `gptel-commit-magit': For use with Magit commit buffers
+;;
+;; The package supports streaming responses and excludes specified file patterns
+;; from diff analysis to focus on relevant changes.
 
 ;;; Code:
 
@@ -81,7 +98,7 @@ SIMPLE vs COMPLEX (single file):
   "Hook run when gptel insert commit message.")
 
 (defvar gptel-commit-backend gptel-backend
-  "The backend used specifically for generating commit messages with `gptel-commit`.
+  "The backend used for generating commit messages with `gptel-commit`.
 This can be set to a lightweight or free model (e.g., via OpenRouter),
 so it won't interfere with your default `gptel` usage for general chat.")
 
@@ -100,15 +117,15 @@ so it won't interfere with your default `gptel` usage for general chat.")
 (defvar gptel-commit--insert-position nil
   "Position where commit message should be inserted.")
 
-(defun gptel--wildcard-to-regexp (glob)
+(defun gptel-commit--wildcard-to-regexp (glob)
   "Convert shell glob GLOB to a regular expression."
   (let ((glob (replace-regexp-in-string "\\.\\*" ".*" glob)))
     (wildcard-to-regexp glob)))
 
-(defun gptel--excluded-file-p (filename)
+(defun gptel-commit--excluded-file-p (filename)
   "Check if FILENAME matches any pattern in `gptel-commit-diff-excludes`."
   (cl-some (lambda (pat)
-             (string-match-p (gptel--wildcard-to-regexp pat) filename))
+             (string-match-p (gptel-commit--wildcard-to-regexp pat) filename))
            gptel-commit-diff-excludes))
 
 (defun gptel-commit--filtered-diff ()
@@ -116,7 +133,7 @@ so it won't interfere with your default `gptel` usage for general chat.")
   (let* ((files (split-string
                  (shell-command-to-string "git diff --name-only --cached")
                  "\n" t))
-         (included-files (cl-remove-if #'gptel--excluded-file-p files))
+         (included-files (cl-remove-if #'gptel-commit--excluded-file-p files))
          (diffs '()))
     (dolist (file included-files)
       (let ((diff (shell-command-to-string (format "git diff --cached -- %s" file))))
@@ -130,21 +147,11 @@ so it won't interfere with your default `gptel` usage for general chat.")
       (and (derived-mode-p 'text-mode 'git-commit-mode) (current-buffer))
       (user-error "No commit message buffer found")))
 
-(defun gptel-commit--stream-callback (response info)
-  "Stream callback for gptel responses in commit buffer."
-  (when-let* ((buffer gptel-commit--current-buffer))
-    (when (buffer-live-p buffer)
-      (with-current-buffer buffer
-        (save-excursion
-          (goto-char gptel-commit--insert-position)
-          (insert response)
-          (setq gptel-commit--insert-position (point)))))))
-
 (defun gptel-commit--setup-request-args ()
   "Setup request arguments based on gptel-commit configuration."
   (list :callback #'gptel-commit--handle-response))
 
-(defun gptel-commit--handle-response (response info)
+(defun gptel-commit--handle-response (response _info)
   "Handle the response from gptel.
 RESPONSE is the generated commit message or chunk.
 INFO is a plist with additional information."
@@ -227,7 +234,7 @@ INFO is a plist with additional information."
   (gptel-commit--generate-message nil))
 
 ;;;###autoload
-(defun gptel-rationale-commit ()
+(defun gptel-commit-rationale ()
   "Prompt user for rationale and generate commit message with GPTel."
   (interactive)
   (when (or (get-buffer "COMMIT_EDITMSG")
@@ -238,26 +245,6 @@ INFO is a plist with additional information."
       (gptel-commit-rationale-mode)
       (gptel-commit--setup-rationale-buffer))
     (pop-to-buffer buffer)))
-
-;;;###autoload
-(defun gptel-commit-magit ()
-  "Generate commit message for use with Magit."
-  (interactive)
-  (if (derived-mode-p 'text-mode 'git-commit-mode)
-      (gptel-commit)
-    (user-error "Not in a commit message buffer")))
-
-;;;###autoload
-(defun gptel-rationale-commit-magit ()
-  "Generate commit message with rationale for use with Magit."
-  (interactive)
-  (if (derived-mode-p 'text-mode 'git-commit-mode)
-      (gptel-rationale-commit)
-    (user-error "Not in a commit message buffer")))
-
-(with-eval-after-load 'magit
-  (define-key git-commit-mode-map (kbd "C-c g") #'gptel-commit-magit)
-  (define-key git-commit-mode-map (kbd "C-c G") #'gptel-rationale-commit-magit))
 
 (provide 'gptel-commit)
 

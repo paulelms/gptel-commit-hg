@@ -49,17 +49,21 @@
 
 ** Usage
 
-*** Basic Usage
+*** Interactive Functions
 
-In a Magit commit buffer:
+Main functions available:
 
-    =C-c g= - Generate commit message based on staged changes
+    =M-x gptel-commit= - Generate commit message directly from staged changes
 
-    =C-c G= - Generate commit message with rationale prompt
+    =M-x gptel-commit-rationale= - Generate with optional rationale/context prompt
+
+*** Magit Integration
+
+When using Magit, these functions work in commit message buffers. You can bind them to convenient keys in your configuration.
 
 *** With Rationale
 
-When using =gptel-rationale-commit=, you'll be prompted to explain why you're making these changes. This helps the AI generate more meaningful commit messages with proper context.
+When using =gptel-commit-rationale=, you'll be prompted to explain why you're making these changes. This helps the AI generate more meaningful commit messages with proper context.
 
 ** Configuration
 
@@ -73,11 +77,11 @@ When using =gptel-rationale-commit=, you'll be prompted to explain why you're ma
 ;; (e.g., a cheaper model via OpenRouter)
 (setq gptel-commit-backend my-openrouter-backend)
 
-;; Exclude files from diff analysis
+;; Exclude files from diff analysis (default patterns shown)
 (setq gptel-commit-diff-excludes
       '("pnpm-lock.yaml"
-        ".lock"
-        "vendor/**/"))
+        "*.lock"
+        "ent/**/*.go"))
 #+end_src
 
 *** Hooks
@@ -92,7 +96,7 @@ When using =gptel-rationale-commit=, you'll be prompted to explain why you're ma
 
     Sends the diff to your configured LLM with a specialized prompt
 
-    Formats the response according to GNU ChangeLog conventions
+    Formats the response according to conventional Git commit message format
 
     Inserts the message in your commit buffer
 
@@ -114,4 +118,4 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 GPL-3.0
 
-/This README was generated with assistance from Claude Opus 4/
+/This README was generated with assistance from Claude Sonnet 4/
