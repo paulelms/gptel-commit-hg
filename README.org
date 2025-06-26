@@ -10,8 +10,6 @@
 
     🎯 Smart filtering of lock files and generated code
 
-    🔧 Seamless integration with Magit
-
 ** Installation
 
 *** Prerequisites
@@ -61,6 +59,12 @@ Main functions available:
 
 When using Magit, these functions work in commit message buffers. You can bind them to convenient keys in your configuration.
 
+#+begin_src emacs-lisp
+(with-eval-after-load 'magit
+  (define-key git-commit-mode-map (kbd "C-c g") #'gptel-commit)
+  (define-key git-commit-mode-map (kbd "C-c G") #'gptel-commit-rationale))
+#+end_src
+
 *** With Rationale
 
 When using =gptel-commit-rationale=, you'll be prompted to explain why you're making these changes. This helps the AI generate more meaningful commit messages with proper context.
@@ -75,7 +79,7 @@ When using =gptel-commit-rationale=, you'll be prompted to explain why you're ma
 
 ;; Use a specific backend for commit messages
 ;; (e.g., a cheaper model via OpenRouter)
-(setq gptel-commit-backend my-openrouter-backend)
+(setq gptel-commit-backend (gptel-make-gh-copilot "Copilot"))
 
 ;; Exclude files from diff analysis (default patterns shown)
 (setq gptel-commit-diff-excludes
