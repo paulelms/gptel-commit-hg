@@ -34,7 +34,6 @@
 ;; Main functions:
 ;; - `gptel-commit': Generate commit message directly
 ;; - `gptel-commit-rationale': Generate with optional context/rationale
-;; - `gptel-commit-magit': For use with Magit commit buffers
 ;;
 ;; The package supports streaming responses and excludes specified file patterns
 ;; from diff analysis to focus on relevant changes.
