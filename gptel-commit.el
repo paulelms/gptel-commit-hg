@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2025 Liu Bo
 
-;; Author: Liu Bo
+;; Author: Liu Bo <liubolovelife@gmail.com>
 ;; Version: 0.1.1
 ;; Package-Requires: ((emacs "27.1") (gptel "0.9.8"))
 ;; Keywords: vc, convenience
