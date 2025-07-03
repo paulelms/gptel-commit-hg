@@ -1,4 +1,4 @@
-;;; gptel-commit.el --- Generate commit message with gptel  -*- lexical-binding: t; -*-
+;;; gptel-commit.el --- Generate commit message with gptel (hg version)  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025 Liu Bo
 
@@ -27,9 +27,9 @@
 
 ;;; Commentary:
 
-;; This package provides functions to generate Git commit messages using GPTel.
+;; This package provides functions to generate commit messages using GPTel.
 ;; It analyzes staged changes and generates appropriate commit messages following
-;; conventional Git commit formats.
+;; conventional commit formats.
 ;;
 ;; Main functions:
 ;; - `gptel-commit': Generate commit message directly
@@ -41,6 +41,7 @@
 ;;; Code:
 
 (require 'gptel)
+(require 'cl-lib)
 
 (defgroup gptel-commit nil
   "Generate commit messages with GPTel."
@@ -54,7 +55,7 @@ Set to nil if your backend doesn't support streaming."
   :group 'gptel-commit)
 
 (defvar gptel-commit-prompt
-  "You are an expert at writing Git commit messages.
+  "You are an expert at writing commit messages.
 Generate **only** the commit message, nothing else.
 
 DECISION PROCESS:
@@ -127,15 +128,21 @@ so it won't interfere with your default `gptel` usage for general chat.")
              (string-match-p (gptel-commit--wildcard-to-regexp pat) filename))
            gptel-commit-diff-excludes))
 
+(defun gptel-commit--hg-status-files ()
+  "Return a list of modified/added/removed files using hg."
+  (let* ((status-output (shell-command-to-string "hg status -mard"))
+         (lines (split-string status-output "\n" t)))
+    (mapcar (lambda (line)
+              (string-trim (substring line 2)))
+            lines)))
+
 (defun gptel-commit--filtered-diff ()
-  "Return a filtered diff string of staged changes, excluding patterns."
-  (let* ((files (split-string
-                 (shell-command-to-string "git diff --name-only --cached")
-                 "\n" t))
+  "Return a filtered diff string of staged changes (hg), excluding patterns."
+  (let* ((files (gptel-commit--hg-status-files))
          (included-files (cl-remove-if #'gptel-commit--excluded-file-p files))
          (diffs '()))
     (dolist (file included-files)
-      (let ((diff (shell-command-to-string (format "git diff --cached -- %s" file))))
+      (let ((diff (shell-command-to-string (format "hg diff %s" file))))
         (when (not (string-empty-p diff))
           (push (format "===== %s =====\n%s" file diff) diffs))))
     (string-join (nreverse diffs) "\n\n")))
